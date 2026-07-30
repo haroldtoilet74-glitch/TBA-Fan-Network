@@ -158,6 +158,41 @@ function refreshViews() {
   renderChampionships();
 }
 
+function setPublishStatus(message, isSuccess = true) {
+  if (!publishStatusMessage) return;
+  publishStatusMessage.textContent = message;
+  publishStatusMessage.style.color = isSuccess ? "#9ee7a4" : "#ffa9b0";
+}
+
+function resetCoachState() {
+  coaches.splice(0, coaches.length);
+  coachProfiles.splice(0, coachProfiles.length);
+  coachArchive.splice(0, coachArchive.length);
+  standings.splice(0, standings.length);
+  powerRankings.splice(0, powerRankings.length);
+
+  teams.forEach((team) => {
+    if (teamInfo[team]) {
+      teamInfo[team].coach = "TBD";
+      teamInfo[team].assistant = "TBD";
+      teamInfo[team].record = "0-0";
+    }
+  });
+
+  try {
+    localStorage.removeItem(STORAGE_KEYS.coaches);
+    localStorage.removeItem(STORAGE_KEYS.coachProfiles);
+    localStorage.removeItem(STORAGE_KEYS.coachArchive);
+    localStorage.removeItem(STORAGE_KEYS.standings);
+    localStorage.removeItem(STORAGE_KEYS.powerRankings);
+    localStorage.removeItem(STORAGE_KEYS.teamInfo);
+  } catch (e) {
+    console.error("Failed to clear local storage:", e);
+  }
+
+  refreshViews();
+}
+
 async function publishState(messageElement, successMessage, failureMessage) {
   const published = await saveState();
   if (messageElement) {
@@ -200,6 +235,22 @@ function getStateUrl() {
   const url = new URL(API_STATE_URL, window.location.href);
   url.searchParams.set("t", String(Date.now()));
   return url.toString();
+}
+
+async function refreshFromServer() {
+  try {
+    const response = await fetch(getStateUrl(), { cache: "no-store", credentials: "same-origin" });
+    if (!response.ok) {
+      throw new Error(`Server returned ${response.status}`);
+    }
+    const payload = await response.json();
+    applyState(payload);
+    refreshViews();
+    return true;
+  } catch (error) {
+    console.error("Failed to refresh shared state:", error);
+    return false;
+  }
 }
 
 async function loadState() {
@@ -309,6 +360,9 @@ const standingsAccessMessage = document.getElementById("standings-access-message
 const commissionerForm = document.getElementById("commissioner-form");
 const commissionerPassInput = document.getElementById("commissioner-passcode");
 const accessMessage = document.getElementById("access-message");
+const publishStateButton = document.getElementById("publish-state-button");
+const resetCoachesButton = document.getElementById("reset-coaches-button");
+const publishStatusMessage = document.getElementById("publish-status-message");
 const rosterEditor = document.getElementById("roster-editor");
 const rosterForm = document.getElementById("roster-form");
 const playerName = document.getElementById("player-name");
@@ -885,17 +939,20 @@ async function initializeApp() {
   seedCoachesFromWindow();
   refreshViews();
   populateTeamSelects();
-  setInterval(async () => {
-    try {
-      const response = await fetch(getStateUrl(), { cache: "no-store" });
-      if (!response.ok) return;
-      const payload = await response.json();
-      applyState(payload);
-      refreshViews();
-    } catch (error) {
-      console.error("Failed to refresh shared state:", error);
+
+  setInterval(() => {
+    refreshFromServer();
+  }, 1000);
+
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") {
+      refreshFromServer();
     }
-  }, 1500);
+  });
+
+  window.addEventListener("focus", () => {
+    refreshFromServer();
+  });
 }
 
 // Merge any static <li> items in the Championship History DOM into the championships array
@@ -949,6 +1006,41 @@ standingsForm.addEventListener("submit", (event) => {
   standingsForm.reset();
   saveState();
 });
+
+if (publishStateButton) {
+  publishStateButton.addEventListener("click", async () => {
+    if (!isCommissionerUnlocked) {
+      setPublishStatus("Unlock the commissioner dashboard first.", false);
+      return;
+    }
+
+    const published = await saveState();
+    if (published) {
+      await refreshFromServer();
+      setPublishStatus("Published to everyone.", true);
+    } else {
+      setPublishStatus("Publish failed. Please try again.", false);
+    }
+  });
+}
+
+if (resetCoachesButton) {
+  resetCoachesButton.addEventListener("click", async () => {
+    if (!isCommissionerUnlocked) {
+      setPublishStatus("Unlock the commissioner dashboard first.", false);
+      return;
+    }
+
+    resetCoachState();
+    const published = await saveState();
+    if (published) {
+      await refreshFromServer();
+      setPublishStatus("Coaches reset to TBD and published.", true);
+    } else {
+      setPublishStatus("Reset completed locally but publish failed.", false);
+    }
+  });
+}
 
 commissionerForm.addEventListener("submit", (event) => {
   event.preventDefault();

@@ -189,6 +189,10 @@ button[type="button"] {
   margin: 16px 0 24px;
 }
 
+.publish-actions button {
+  margin: 0;
+}
+
 .rank-list,
 .history-list,
 .roster-list {
