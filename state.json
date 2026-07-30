@@ -5,11 +5,214 @@
   "powerRankings": [],
   "teamInfo": {
     "Celtics": {
-      "coach": "Shared Coach",
+      "coach": "hi",
       "assistant": "TBD",
       "record": "20-4",
       "division": "Atlantic",
       "conference": "Eastern"
+    },
+    "Knicks": {
+      "coach": "TBD",
+      "assistant": "TBD",
+      "record": "0-0",
+      "division": "Atlantic",
+      "conference": "Eastern"
+    },
+    "Nets": {
+      "coach": "TBD",
+      "assistant": "TBD",
+      "record": "0-0",
+      "division": "Atlantic",
+      "conference": "Eastern"
+    },
+    "76ers": {
+      "coach": "TBD",
+      "assistant": "TBD",
+      "record": "0-0",
+      "division": "Atlantic",
+      "conference": "Eastern"
+    },
+    "Raptors": {
+      "coach": "TBD",
+      "assistant": "TBD",
+      "record": "0-0",
+      "division": "Atlantic",
+      "conference": "Eastern"
+    },
+    "Bulls": {
+      "coach": "TBD",
+      "assistant": "TBD",
+      "record": "0-0",
+      "division": "Central",
+      "conference": "Eastern"
+    },
+    "Cavaliers": {
+      "coach": "TBD",
+      "assistant": "TBD",
+      "record": "0-0",
+      "division": "Central",
+      "conference": "Eastern"
+    },
+    "Pistons": {
+      "coach": "TBD",
+      "assistant": "TBD",
+      "record": "0-0",
+      "division": "Central",
+      "conference": "Eastern"
+    },
+    "Pacers": {
+      "coach": "TBD",
+      "assistant": "TBD",
+      "record": "0-0",
+      "division": "Central",
+      "conference": "Eastern"
+    },
+    "Bucks": {
+      "coach": "TBD",
+      "assistant": "TBD",
+      "record": "0-0",
+      "division": "Central",
+      "conference": "Eastern"
+    },
+    "Heat": {
+      "coach": "TBD",
+      "assistant": "TBD",
+      "record": "0-0",
+      "division": "Southeast",
+      "conference": "Eastern"
+    },
+    "Magic": {
+      "coach": "TBD",
+      "assistant": "TBD",
+      "record": "0-0",
+      "division": "Southeast",
+      "conference": "Eastern"
+    },
+    "Hawks": {
+      "coach": "TBD",
+      "assistant": "TBD",
+      "record": "0-0",
+      "division": "Southeast",
+      "conference": "Eastern"
+    },
+    "Hornets": {
+      "coach": "TBD",
+      "assistant": "TBD",
+      "record": "0-0",
+      "division": "Southeast",
+      "conference": "Eastern"
+    },
+    "Wizards": {
+      "coach": "TBD",
+      "assistant": "TBD",
+      "record": "0-0",
+      "division": "Southeast",
+      "conference": "Eastern"
+    },
+    "Lakers": {
+      "coach": "TBD",
+      "assistant": "TBD",
+      "record": "0-0",
+      "division": "Pacific",
+      "conference": "Western"
+    },
+    "Clippers": {
+      "coach": "TBD",
+      "assistant": "TBD",
+      "record": "0-0",
+      "division": "Pacific",
+      "conference": "Western"
+    },
+    "Suns": {
+      "coach": "TBD",
+      "assistant": "TBD",
+      "record": "0-0",
+      "division": "Pacific",
+      "conference": "Western"
+    },
+    "Warriors": {
+      "coach": "TBD",
+      "assistant": "TBD",
+      "record": "0-0",
+      "division": "Pacific",
+      "conference": "Western"
+    },
+    "Kings": {
+      "coach": "TBD",
+      "assistant": "TBD",
+      "record": "0-0",
+      "division": "Pacific",
+      "conference": "Western"
+    },
+    "Trail Blazers": {
+      "coach": "TBD",
+      "assistant": "TBD",
+      "record": "0-0",
+      "division": "Northwest",
+      "conference": "Western"
+    },
+    "Timberwolves": {
+      "coach": "TBD",
+      "assistant": "TBD",
+      "record": "0-0",
+      "division": "Northwest",
+      "conference": "Western"
+    },
+    "Thunder": {
+      "coach": "TBD",
+      "assistant": "TBD",
+      "record": "0-0",
+      "division": "Northwest",
+      "conference": "Western"
+    },
+    "Nuggets": {
+      "coach": "TBD",
+      "assistant": "TBD",
+      "record": "0-0",
+      "division": "Northwest",
+      "conference": "Western"
+    },
+    "Rockets": {
+      "coach": "TBD",
+      "assistant": "TBD",
+      "record": "0-0",
+      "division": "Southwest",
+      "conference": "Western"
+    },
+    "Spurs": {
+      "coach": "TBD",
+      "assistant": "TBD",
+      "record": "0-0",
+      "division": "Southwest",
+      "conference": "Western"
+    },
+    "Grizzlies": {
+      "coach": "TBD",
+      "assistant": "TBD",
+      "record": "0-0",
+      "division": "Southwest",
+      "conference": "Western"
+    },
+    "Pelicans": {
+      "coach": "TBD",
+      "assistant": "TBD",
+      "record": "0-0",
+      "division": "Southwest",
+      "conference": "Western"
+    },
+    "Mavericks": {
+      "coach": "TBD",
+      "assistant": "TBD",
+      "record": "0-0",
+      "division": "Southwest",
+      "conference": "Western"
+    },
+    "Jazz": {
+      "coach": "TBD",
+      "assistant": "TBD",
+      "record": "0-0",
+      "division": "Northwest",
+      "conference": "Western"
     }
   },
   "championships": [
@@ -18,5 +221,6 @@
       "title": "S1 Finals",
       "desc": "San Antonio Spurs defeat Milwaukee Bucks, 119-114"
     }
-  ]
+  ],
+  "coachArchive": []
 }
