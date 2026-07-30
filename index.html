@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TBA Fan Network</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="site-shell">
+      <header class="hero">
+        <p class="eyebrow">Fan powered league hub</p>
+        <h1>TBA Fan Network</h1>
+        <p class="hero-copy">
+          Follow the action across your favorite teams with standings, rankings,
+          and team history in one red-themed destination.
+        </p>
+      </header>
+
+      <nav class="main-tabs" aria-label="Primary">
+        <button class="tab-btn active" data-target="home">Home</button>
+        <button class="tab-btn" data-target="team-hub">Team Hub</button>
+        <button class="tab-btn" data-target="power-rankings">Power Rankings</button>
+        <button class="tab-btn" data-target="standings">Standings</button>
+        <button class="tab-btn" data-target="league-history">League History</button>
+        <button class="tab-btn" data-target="commissioner-dashboard">Commissioner Dashboard</button>
+      </nav>
+
+      <main>
+        <section id="home" class="tab-panel active">
+          <div class="panel-card spotlight">
+            <h2>Welcome to the league</h2>
+            <p>
+              Keep an eye on postseason contenders, rising squads, and the stories
+              behind every matchup. This hub is built for fans who want quick access
+              to the latest pulse of the league.
+            </p>
+            <p class="home-note">League directory now includes all 30 teams across both conferences.</p>
+            <div class="highlights">
+              <article>
+                <h3>Fast updates</h3>
+                <p>Track team momentum and form at a glance.</p>
+              </article>
+              <article>
+                <h3>History first</h3>
+                <p>Explore award winners and championship runs.</p>
+              </article>
+              <article>
+                <h3>Coach ready</h3>
+                <p>Add coaches and assistant coaches to each team profile when you are ready.</p>
+              </article>
+            </div>
+          </div>
+        </section>
+
+        <section id="team-hub" class="tab-panel">
+          <div class="panel-card">
+            <p class="home-note">Select a team card to view its coaches and open their personal profiles.</p>
+            <div class="team-grid" id="team-grid"></div>
+          </div>
+        </section>
+
+        <section id="power-rankings" class="tab-panel">
+          <div class="panel-card">
+            <h2>Power Rankings</h2>
+            <!-- Commissioner unlock handled in Commissioner Dashboard -->
+            <div id="power-rankings-editor" class="roster-editor hidden">
+              <form id="power-rankings-edit-form" class="roster-form">
+                <label>
+                  Team
+                  <select id="power-rankings-team-name" required>
+                    <option value="">Select team</option>
+                  </select>
+                </label>
+                <label>
+                  Power Rank
+                  <input type="number" id="power-rank-edit" min="1" max="30" required />
+                </label>
+                <button type="submit">Save Power Ranking</button>
+              </form>
+            </div>
+            <ol id="power-rankings-content" class="rank-list"></ol>
+          </div>
+        </section>
+
+        <section id="standings" class="tab-panel">
+          <div class="panel-card">
+            <h2>Standings</h2>
+            <!-- Commissioner unlock handled in Commissioner Dashboard -->
+            <div id="standings-editor" class="roster-editor hidden">
+              <form id="standings-edit-form" class="roster-form">
+                <label>
+                  Team
+                  <select id="standings-team-name" required>
+                    <option value="">Select team</option>
+                  </select>
+                </label>
+                <label>
+                  Conference
+                  <select id="standings-conference" required>
+                    <option value="">Select conference</option>
+                    <option value="Eastern">Eastern</option>
+                    <option value="Western">Western</option>
+                  </select>
+                </label>
+                <label>
+                  Division
+                  <select id="standings-division" required>
+                    <option value="">Select division</option>
+                    <option value="Atlantic">Atlantic</option>
+                    <option value="Central">Central</option>
+                    <option value="Southeast">Southeast</option>
+                    <option value="Pacific">Pacific</option>
+                    <option value="Northwest">Northwest</option>
+                    <option value="Southwest">Southwest</option>
+                  </select>
+                </label>
+                <label>
+                  Wins
+                  <input type="number" id="standings-wins" min="0" required />
+                </label>
+                <label>
+                  Losses
+                  <input type="number" id="standings-losses" min="0" required />
+                </label>
+                <label>
+                  Playoff Status
+                  <select id="playoff-status">
+                    <option value="Direct">Direct</option>
+                    <option value="Play-In">Play-In</option>
+                    <option value="Out">Out</option>
+                  </select>
+                </label>
+                <label>
+                  Playoff Seed
+                  <input type="number" id="playoff-seed" min="1" max="10" />
+                </label>
+                <button type="submit">Save Standings</button>
+              </form>
+            </div>
+            <div id="standings-content"></div>
+          </div>
+        </section>
+
+        <section id="league-history" class="tab-panel">
+          <div class="panel-card">
+            <div class="mini-tabs" role="tablist" aria-label="League History">
+              <button class="mini-tab active" data-target="award-history">Award History</button>
+              <button class="mini-tab" data-target="championship-history">Championship History</button>
+            </div>
+
+            <div id="award-history" class="mini-panel active">
+              <ul class="history-list">
+                <li>Most Valuable Player: @PickedByPS2</li>
+                <li>Coach Of The Year: @Bucsfan6to13</li>
+                <li>Assistant Coach Of The Year: @SoxFanNerd</li>
+                <li>Clutch Player Of The Year: @JoeyTakesFlight</li>
+              </ul>
+            </div>
+
+            <div id="championship-history" class="mini-panel">
+              <ul class="history-list" id="championship-history-list">
+                <li class="champ-link" data-title="S1 Finals" data-desc="San Antonio Spurs defeat Milwaukee Bucks, 119-114">S1 Finals: San Antonio Spurs defeat Milwaukee Bucks, 119-114</li>
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        <section id="commissioner-dashboard" class="tab-panel">
+          <div class="panel-card">
+            <h2>Commissioner Dashboard</h2>
+            <div id="commissioner-gate" class="commissioner-gate">
+              <p>Enter the commissioner passcode to unlock roster updates.</p>
+              <form id="commissioner-form" class="roster-form">
+                <label>
+                  Passcode
+                  <input type="password" id="commissioner-passcode" placeholder="Enter passcode" required />
+                </label>
+                <button type="submit">Unlock</button>
+              </form>
+              <p id="access-message" class="access-message">Access denied.</p>
+            </div>
+
+            <div id="roster-editor" class="roster-editor hidden">
+              <form id="roster-form" class="roster-form">
+                <label>
+                  Coach Name
+                  <input type="text" id="player-name" placeholder="Add coach" required />
+                </label>
+                <label>
+                  Role
+                  <select id="coach-role" required>
+                    <option value="">Select role</option>
+                    <option value="Head Coach">Head Coach</option>
+                    <option value="Assistant Coach">Assistant Coach</option>
+                  </select>
+                </label>
+                <label>
+                  Team
+                  <select id="team-name" required>
+                    <option value="">Select team</option>
+                  </select>
+                </label>
+                <button type="submit">Add Coach</button>
+              </form>
+
+              <h3>Roster Overview</h3>
+              <div id="roster-list" class="roster-list"></div>
+
+              <h3>Delete Coach</h3>
+              <div id="coach-delete-list" class="roster-list"></div>
+
+              <h3>Coach Profiles</h3>
+              <div id="coach-profile-list" class="roster-list"></div>
+
+              <form id="coach-profile-form" class="roster-form">
+                <input type="hidden" id="profile-id" />
+                <label>
+                  Coach Name
+                  <input type="text" id="profile-name" placeholder="Coach name" required />
+                </label>
+                <label>
+                  Team
+                  <select id="profile-team" required>
+                    <option value="">Select team</option>
+                  </select>
+                </label>
+                <label>
+                  Role
+                  <select id="profile-role" required>
+                    <option value="">Select role</option>
+                    <option value="Head Coach">Head Coach</option>
+                    <option value="Assistant Coach">Assistant Coach</option>
+                  </select>
+                </label>
+                <label>
+                  All-Time Record
+                  <input type="text" id="profile-record" placeholder="e.g. 640-500" />
+                </label>
+                <label>
+                  Seasons in League
+                  <input type="number" id="profile-seasons" min="0" placeholder="e.g. 12" />
+                </label>
+                <label>
+                  Accolades
+                  <textarea id="profile-accolades" rows="4" placeholder="One accolade per line"></textarea>
+                </label>
+                <label>
+                  Legacy Level
+                  <select id="profile-legacy" required>
+                    <option value="0">Select legacy level</option>
+                    <option value="1">1 star</option>
+                    <option value="2">2 stars</option>
+                    <option value="3">3 stars</option>
+                    <option value="4">4 stars</option>
+                    <option value="5">5 stars</option>
+                  </select>
+                </label>
+                <button type="submit">Save Coach Profile</button>
+              </form>
+
+              <h3>Edit Team Info</h3>
+              <form id="team-edit-form" class="roster-form">
+                <label>
+                  Team
+                  <select id="edit-team-name" required>
+                    <option value="">Select team</option>
+                  </select>
+                </label>
+                <label>
+                  Coach
+                  <input type="text" id="edit-coach" placeholder="Coach name" />
+                </label>
+                <label>
+                  Assistant Coach
+                  <input type="text" id="edit-assistant" placeholder="Assistant coach" />
+                </label>
+                <label>
+                  Record
+                  <input type="text" id="edit-record" placeholder="e.g. 18-7" />
+                </label>
+                <label>
+                  Division
+                  <input type="text" id="edit-division" placeholder="e.g. Atlantic" />
+                </label>
+                <label>
+                  Conference Standing
+                  <input type="text" id="edit-conference" placeholder="e.g. Eastern" />
+                </label>
+                <button type="submit">Save Team Info</button>
+              </form>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script src="script.js"></script>
+    <div id="modal" class="modal hidden">
+      <div class="modal-backdrop"></div>
+      <div class="modal-card">
+        <button class="modal-close" aria-label="Close">×</button>
+        <h3 id="modal-title"></h3>
+        <div id="modal-body"></div>
+      </div>
+    </div>
+  </body>
+</html>

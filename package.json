@@ -1,0 +1,12 @@
+{
+  "name": "tba-fan-network",
+  "version": "1.0.0",
+  "description": "Static fan network site for standings, rankings, and team data.",
+  "private": true,
+  "scripts": {
+    "dev": "http-server . -p 8000 -c-1"
+  },
+  "devDependencies": {
+    "http-server": "^14.1.1"
+  }
+}
