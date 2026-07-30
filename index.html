@@ -193,6 +193,13 @@
                 <p id="publish-status-message" class="access-message"></p>
               </div>
 
+              <div class="code-import-card">
+                <h3>Bulk Coach Import</h3>
+                <p class="helper-copy">Paste JSON like [{"name":"Coach Name","role":"Head Coach","team":"Lakers","record":"20-4","accolades":"Championship","legacy":"5","seasons":"12"}]</p>
+                <textarea id="coach-import-json" rows="8" placeholder='[{"name":"Coach Name","role":"Head Coach","team":"Lakers","record":"20-4","accolades":"Championship","legacy":"5","seasons":"12"}]'></textarea>
+                <button type="button" id="import-coaches-button">Import coaches from JSON</button>
+              </div>
+
               <form id="roster-form" class="roster-form">
                 <label>
                   Coach Name

@@ -193,6 +193,20 @@ button[type="button"] {
   margin: 0;
 }
 
+.code-import-card {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 18px;
+  padding: 18px;
+  margin: 0 0 24px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.helper-copy {
+  margin: 0 0 12px;
+  color: #c7c0d3;
+  font-size: 0.95rem;
+}
+
 .rank-list,
 .history-list,
 .roster-list {

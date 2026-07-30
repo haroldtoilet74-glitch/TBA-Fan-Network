@@ -168,8 +168,6 @@ function resetCoachState() {
   coaches.splice(0, coaches.length);
   coachProfiles.splice(0, coachProfiles.length);
   coachArchive.splice(0, coachArchive.length);
-  standings.splice(0, standings.length);
-  powerRankings.splice(0, powerRankings.length);
 
   teams.forEach((team) => {
     if (teamInfo[team]) {
@@ -183,23 +181,12 @@ function resetCoachState() {
     localStorage.removeItem(STORAGE_KEYS.coaches);
     localStorage.removeItem(STORAGE_KEYS.coachProfiles);
     localStorage.removeItem(STORAGE_KEYS.coachArchive);
-    localStorage.removeItem(STORAGE_KEYS.standings);
-    localStorage.removeItem(STORAGE_KEYS.powerRankings);
-    localStorage.removeItem(STORAGE_KEYS.teamInfo);
+    localStorage.setItem(STORAGE_KEYS.teamInfo, JSON.stringify(teamInfo));
   } catch (e) {
     console.error("Failed to clear local storage:", e);
   }
 
   refreshViews();
-}
-
-async function publishState(messageElement, successMessage, failureMessage) {
-  const published = await saveState();
-  if (messageElement) {
-    messageElement.textContent = published ? successMessage : failureMessage;
-    messageElement.style.color = published ? "#9ee7a4" : "#ffa9b0";
-  }
-  return published;
 }
 
 async function saveState() {
@@ -220,6 +207,7 @@ async function saveState() {
 
     const serverState = await response.json();
     applyState(serverState);
+    saveToLocalFallback();
     refreshViews();
     return true;
   } catch (e) {
@@ -363,6 +351,8 @@ const accessMessage = document.getElementById("access-message");
 const publishStateButton = document.getElementById("publish-state-button");
 const resetCoachesButton = document.getElementById("reset-coaches-button");
 const publishStatusMessage = document.getElementById("publish-status-message");
+const coachImportJson = document.getElementById("coach-import-json");
+const importCoachesButton = document.getElementById("import-coaches-button");
 const rosterEditor = document.getElementById("roster-editor");
 const rosterForm = document.getElementById("roster-form");
 const playerName = document.getElementById("player-name");
@@ -1007,13 +997,82 @@ standingsForm.addEventListener("submit", (event) => {
   saveState();
 });
 
+function importCoachesFromJson(rawValue) {
+  if (!rawValue) {
+    setPublishStatus("Paste coach JSON first.", false);
+    return false;
+  }
+
+  try {
+    const parsed = JSON.parse(rawValue);
+    const entries = Array.isArray(parsed) ? parsed : [parsed];
+    let importedCount = 0;
+
+    entries.forEach((entry) => {
+      if (!entry || !entry.name) {
+        return;
+      }
+
+      const normalizedName = entry.name.trim();
+      const team = entry.team ? entry.team.trim() : "";
+      const role = entry.role || "Head Coach";
+      const profileDetails = entry.profile || entry;
+
+      if (!team) {
+        return;
+      }
+
+      const existingCoach = coaches.find((coach) => coach.name === normalizedName && coach.team === team);
+      const coachEntry = existingCoach || {
+        id: entry.id || `import-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+        name: normalizedName,
+        role,
+        team,
+      };
+
+      if (!existingCoach) {
+        coaches.push(coachEntry);
+      }
+
+      if (role === "Head Coach") {
+        teamInfo[team].coach = normalizedName;
+      } else if (role === "Assistant Coach") {
+        teamInfo[team].assistant = normalizedName;
+      }
+
+      const existingProfile = coachProfiles.find((profile) => profile.name === normalizedName && profile.team === team);
+      const profileEntry = existingProfile || {
+        id: entry.profileId || `profile-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+        name: normalizedName,
+        team,
+        role,
+        record: profileDetails.record || "",
+        accolades: profileDetails.accolades || "",
+        legacy: profileDetails.legacy || "0",
+        seasons: profileDetails.seasons || "",
+      };
+
+      if (!existingProfile) {
+        coachProfiles.push(profileEntry);
+      } else {
+        Object.assign(existingProfile, profileEntry);
+      }
+
+      importedCount += 1;
+    });
+
+    refreshViews();
+    return importedCount;
+  } catch (error) {
+    console.error("Invalid coach import JSON:", error);
+    setPublishStatus("Invalid JSON. Please paste a valid coach array.", false);
+    return false;
+  }
+}
+
 if (publishStateButton) {
   publishStateButton.addEventListener("click", async () => {
-    if (!isCommissionerUnlocked) {
-      setPublishStatus("Unlock the commissioner dashboard first.", false);
-      return;
-    }
-
+    setPublishStatus("Publishing...", true);
     const published = await saveState();
     if (published) {
       await refreshFromServer();
@@ -1026,18 +1085,30 @@ if (publishStateButton) {
 
 if (resetCoachesButton) {
   resetCoachesButton.addEventListener("click", async () => {
-    if (!isCommissionerUnlocked) {
-      setPublishStatus("Unlock the commissioner dashboard first.", false);
-      return;
-    }
-
     resetCoachState();
+    setPublishStatus("Resetting coaches...", true);
     const published = await saveState();
     if (published) {
       await refreshFromServer();
       setPublishStatus("Coaches reset to TBD and published.", true);
     } else {
       setPublishStatus("Reset completed locally but publish failed.", false);
+    }
+  });
+}
+
+if (importCoachesButton) {
+  importCoachesButton.addEventListener("click", async () => {
+    const importedCount = importCoachesFromJson(coachImportJson ? coachImportJson.value : "");
+    if (!importedCount) {
+      return;
+    }
+
+    setPublishStatus(`Imported ${importedCount} coach entry${importedCount === 1 ? "" : "ies"}.`, true);
+    const published = await saveState();
+    if (published) {
+      await refreshFromServer();
+      setPublishStatus(`Imported ${importedCount} coach entry${importedCount === 1 ? "" : "ies"} and published.`, true);
     }
   });
 }
