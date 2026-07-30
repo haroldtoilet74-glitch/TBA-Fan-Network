@@ -181,6 +181,14 @@ button[type="button"] {
   color: #ffa9b0;
 }
 
+.publish-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin: 16px 0 24px;
+}
+
 .rank-list,
 .history-list,
 .roster-list {

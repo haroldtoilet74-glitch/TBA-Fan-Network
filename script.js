@@ -149,6 +149,15 @@ function saveToLocalFallback() {
   }
 }
 
+function refreshViews() {
+  renderTeamGrid();
+  renderPowerRankings();
+  renderStandings();
+  renderRoster();
+  renderArchive();
+  renderChampionships();
+}
+
 async function saveState() {
   const payload = getPersistedState();
   try {
@@ -164,9 +173,12 @@ async function saveState() {
 
     const serverState = await response.json();
     applyState(serverState);
+    refreshViews();
+    return true;
   } catch (e) {
     console.error("Failed to sync state to server:", e);
     saveToLocalFallback();
+    return false;
   }
 }
 
@@ -281,6 +293,10 @@ const standingsAccessMessage = document.getElementById("standings-access-message
 const commissionerForm = document.getElementById("commissioner-form");
 const commissionerPassInput = document.getElementById("commissioner-passcode");
 const accessMessage = document.getElementById("access-message");
+const publishCoachesButton = document.getElementById("publish-coaches-button");
+const publishCoachesMessage = document.getElementById("publish-coaches-message");
+const publishStandingsButton = document.getElementById("publish-standings-button");
+const publishStandingsMessage = document.getElementById("publish-standings-message");
 const rosterEditor = document.getElementById("roster-editor");
 const rosterForm = document.getElementById("roster-form");
 const playerName = document.getElementById("player-name");
@@ -743,29 +759,19 @@ if (standingsPassForm) {
 async function initializeApp() {
   await loadState();
   mergeDomChampionships();
-  renderTeamGrid();
+  refreshViews();
   populateTeamSelects();
-  renderPowerRankings();
-  renderStandings();
-  renderRoster();
-  renderArchive();
-  renderChampionships();
   setInterval(async () => {
     try {
       const response = await fetch(getStateUrl(), { cache: "no-store" });
       if (!response.ok) return;
       const payload = await response.json();
       applyState(payload);
-      renderTeamGrid();
-      renderPowerRankings();
-      renderStandings();
-      renderRoster();
-      renderArchive();
-      renderChampionships();
+      refreshViews();
     } catch (error) {
       console.error("Failed to refresh shared state:", error);
     }
-  }, 3000);
+  }, 1500);
 }
 
 // Merge any static <li> items in the Championship History DOM into the championships array
@@ -819,6 +825,36 @@ standingsForm.addEventListener("submit", (event) => {
   standingsForm.reset();
   saveState();
 });
+
+function setPublishMessage(element, message, isSuccess) {
+  if (!element) return;
+  element.textContent = message;
+  element.style.color = isSuccess ? "#9ee7a4" : "#ffa9b0";
+}
+
+if (publishCoachesButton) {
+  publishCoachesButton.addEventListener("click", async () => {
+    if (!isCommissionerUnlocked) {
+      setPublishMessage(publishCoachesMessage, "Unlock the commissioner dashboard first.", false);
+      return;
+    }
+
+    const published = await saveState();
+    setPublishMessage(publishCoachesMessage, published ? "Coaches published to everyone." : "Could not publish coaches right now.", published);
+  });
+}
+
+if (publishStandingsButton) {
+  publishStandingsButton.addEventListener("click", async () => {
+    if (!isCommissionerUnlocked) {
+      setPublishMessage(publishStandingsMessage, "Unlock the commissioner dashboard first.", false);
+      return;
+    }
+
+    const published = await saveState();
+    setPublishMessage(publishStandingsMessage, published ? "Standings published to everyone." : "Could not publish standings right now.", published);
+  });
+}
 
 commissionerForm.addEventListener("submit", (event) => {
   event.preventDefault();

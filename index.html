@@ -88,6 +88,10 @@
             <h2>Standings</h2>
             <!-- Commissioner unlock handled in Commissioner Dashboard -->
             <div id="standings-editor" class="roster-editor hidden">
+              <div class="publish-actions">
+                <button type="button" id="publish-standings-button">Publish standings to everyone</button>
+                <p id="publish-standings-message" class="access-message"></p>
+              </div>
               <form id="standings-edit-form" class="roster-form">
                 <label>
                   Team
@@ -211,6 +215,11 @@
 
               <h3>Roster Overview</h3>
               <div id="roster-list" class="roster-list"></div>
+
+              <div class="publish-actions">
+                <button type="button" id="publish-coaches-button">Publish coaches to everyone</button>
+                <p id="publish-coaches-message" class="access-message"></p>
+              </div>
 
               <h3>Delete Coach</h3>
               <div id="coach-delete-list" class="roster-list"></div>
