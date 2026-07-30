@@ -88,6 +88,7 @@ const STORAGE_KEYS = {
   coachArchive: "tba_coachArchive",
 };
 const API_STATE_URL = "/api/state";
+const API_STATE_URL_WITH_CACHE_BUSTER = `${API_STATE_URL}?t=${Date.now()}`;
 
 let lastOpenedFromTeamCard = false;
 let isCommissionerUnlocked = false;
@@ -169,9 +170,13 @@ async function saveState() {
   }
 }
 
+function getStateUrl() {
+  return `${API_STATE_URL}?t=${Date.now()}`;
+}
+
 async function loadState() {
   try {
-    const response = await fetch(API_STATE_URL);
+    const response = await fetch(getStateUrl(), { cache: "no-store" });
     if (!response.ok) {
       throw new Error(`Server returned ${response.status}`);
     }
@@ -747,7 +752,7 @@ async function initializeApp() {
   renderChampionships();
   setInterval(async () => {
     try {
-      const response = await fetch(API_STATE_URL);
+      const response = await fetch(getStateUrl(), { cache: "no-store" });
       if (!response.ok) return;
       const payload = await response.json();
       applyState(payload);

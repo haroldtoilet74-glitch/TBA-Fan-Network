@@ -97,7 +97,12 @@ function createApp() {
 
     if (pathname === "/api/state") {
       if (req.method === "GET") {
-        res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
+        res.writeHead(200, {
+          "Content-Type": "application/json; charset=utf-8",
+          "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+          Pragma: "no-cache",
+          Expires: "0",
+        });
         res.end(JSON.stringify(readState()));
         return;
       }
@@ -111,7 +116,12 @@ function createApp() {
           try {
             const parsed = body ? JSON.parse(body) : {};
             const state = writeState(parsed);
-            res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
+            res.writeHead(200, {
+              "Content-Type": "application/json; charset=utf-8",
+              "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+              Pragma: "no-cache",
+              Expires: "0",
+            });
             res.end(JSON.stringify(state));
           } catch (error) {
             res.writeHead(400, { "Content-Type": "application/json; charset=utf-8" });
