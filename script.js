@@ -170,10 +170,13 @@ async function publishState(messageElement, successMessage, failureMessage) {
 async function saveState() {
   const payload = getPersistedState();
   try {
-    const response = await fetch(API_STATE_URL, {
+    const response = await fetch(getStateUrl(), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
+      cache: "no-store",
+      credentials: "same-origin",
+      keepalive: true,
     });
 
     if (!response.ok) {
@@ -187,17 +190,21 @@ async function saveState() {
   } catch (e) {
     console.error("Failed to sync state to server:", e);
     saveToLocalFallback();
+    window.dispatchEvent(new CustomEvent("tba-state-changed", { detail: payload }));
+    refreshViews();
     return false;
   }
 }
 
 function getStateUrl() {
-  return `${API_STATE_URL}?t=${Date.now()}`;
+  const url = new URL(API_STATE_URL, window.location.href);
+  url.searchParams.set("t", String(Date.now()));
+  return url.toString();
 }
 
 async function loadState() {
   try {
-    const response = await fetch(getStateUrl(), { cache: "no-store" });
+    const response = await fetch(getStateUrl(), { cache: "no-store", credentials: "same-origin" });
     if (!response.ok) {
       throw new Error(`Server returned ${response.status}`);
     }
@@ -309,7 +316,6 @@ const coachRole = document.getElementById("coach-role");
 const teamName = document.getElementById("team-name");
 const rosterList = document.getElementById("roster-list");
 const coachDeleteList = document.getElementById("coach-delete-list");
-const coachProfileList = document.getElementById("coach-profile-list");
 const coachProfileForm = document.getElementById("coach-profile-form");
 const profileIdInput = document.getElementById("profile-id");
 const profileName = document.getElementById("profile-name");
@@ -470,9 +476,8 @@ function renderArchive() {
 function renderRoster() {
   rosterList.innerHTML = "";
   coachDeleteList.innerHTML = "";
-  coachProfileList.innerHTML = "";
 
-  if (!coachProfileList || !rosterList || !coachDeleteList) {
+  if (!rosterList || !coachDeleteList) {
     return;
   }
 
@@ -504,43 +509,6 @@ function renderRoster() {
     });
   }
 
-  if (coachProfiles.length === 0) {
-    coachProfileList.innerHTML = "<div>No coach profiles saved yet.</div>";
-  } else {
-    coachProfiles.forEach((profile) => {
-      const profileCard = document.createElement("div");
-      profileCard.innerHTML = `
-        <strong>${profile.name}</strong>
-        <p>${profile.role} — ${profile.team}</p>
-        <p>Record: ${profile.record || "N/A"}</p>
-        <p>Seasons: ${profile.seasons || "N/A"}</p>
-        <p>Legacy: ${profile.legacy} star(s)</p>
-        <p>Accolades: ${profile.accolades || "None"}</p>
-      `;
-      const editBtn = document.createElement("button");
-      editBtn.type = "button";
-      editBtn.textContent = "Edit profile";
-      editBtn.addEventListener("click", () => {
-        if (!profileIdInput || !profileName || !profileTeam || !profileRole || !profileRecord || !profileAccolades || !profileLegacy || !profileSeasons) {
-          return;
-        }
-        profileIdInput.value = profile.id;
-        profileName.value = profile.name;
-        profileTeam.value = profile.team;
-        profileRole.value = profile.role;
-        profileRecord.value = profile.record || "";
-        profileAccolades.value = profile.accolades || "";
-        profileLegacy.value = profile.legacy || "0";
-        profileSeasons.value = profile.seasons || "";
-        showTab("commissioner-dashboard");
-        const editor = document.getElementById("roster-editor");
-        if (editor) editor.classList.remove("hidden");
-        profileName.focus();
-      });
-      profileCard.appendChild(editBtn);
-      coachProfileList.appendChild(profileCard);
-    });
-  }
   // populate coach datalist for profile input
   populateCoachesDatalist();
 }
@@ -555,6 +523,143 @@ function populateCoachesDatalist() {
     datalist.appendChild(option);
   });
 }
+
+function populateProfileForm(profile) {
+  if (!profileIdInput || !profileName || !profileTeam || !profileRole || !profileRecord || !profileAccolades || !profileLegacy || !profileSeasons) {
+    return;
+  }
+  profileIdInput.value = profile.id || "";
+  profileName.value = profile.name || "";
+  profileTeam.value = profile.team || "";
+  profileRole.value = profile.role || "Head Coach";
+  profileRecord.value = profile.record || "";
+  profileAccolades.value = profile.accolades || "";
+  profileLegacy.value = profile.legacy || "0";
+  profileSeasons.value = profile.seasons || "";
+  showTab("commissioner-dashboard");
+  const editor = document.getElementById("roster-editor");
+  if (editor) editor.classList.remove("hidden");
+  profileName.focus();
+}
+
+function seedCoachesFromWindow() {
+  const seeded = Array.isArray(window.TBA_SEED_COACHES) ? window.TBA_SEED_COACHES : [];
+  if (seeded.length === 0) return;
+
+  seeded.forEach((entry) => {
+    if (!entry || !entry.name) return;
+    const name = entry.name.trim();
+    const team = entry.team;
+    if (!team) return;
+
+    const existingCoach = coaches.find((coach) => coach.name === name && coach.team === team);
+    if (!existingCoach) {
+      coaches.push({
+        id: entry.id || `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+        name,
+        role: entry.role || "Head Coach",
+        team,
+      });
+    }
+
+    if (entry.role === "Head Coach") {
+      teamInfo[team].coach = name;
+    } else if (entry.role === "Assistant Coach") {
+      teamInfo[team].assistant = name;
+    }
+
+    const existingProfile = coachProfiles.find((profile) => profile.name === name && profile.team === team);
+    if (!existingProfile) {
+      coachProfiles.push({
+        id: entry.profileId || `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+        name,
+        team,
+        role: entry.role || "Head Coach",
+        record: entry.record || "",
+        accolades: entry.accolades || "",
+        legacy: entry.legacy || "0",
+        seasons: entry.seasons || "",
+      });
+    }
+  });
+
+  refreshViews();
+  saveState();
+}
+
+window.publishToEveryone = async function publishToEveryone() {
+  return saveState();
+};
+
+window.addCoach = function addCoach(entry) {
+  const name = entry && entry.name ? entry.name.trim() : "";
+  if (!name) return null;
+  const team = entry.team;
+  if (!team) return null;
+
+  const coach = {
+    id: entry.id || `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+    name,
+    role: entry.role || "Head Coach",
+    team,
+  };
+  coaches.push(coach);
+  if (coach.role === "Head Coach") {
+    teamInfo[team].coach = name;
+  } else if (coach.role === "Assistant Coach") {
+    teamInfo[team].assistant = name;
+  }
+
+  if (entry.profile) {
+    coachProfiles.push({
+      id: entry.profile.id || `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+      name,
+      team,
+      role: entry.profile.role || coach.role,
+      record: entry.profile.record || "",
+      accolades: entry.profile.accolades || "",
+      legacy: entry.profile.legacy || "0",
+      seasons: entry.profile.seasons || "",
+    });
+  }
+
+  refreshViews();
+  saveState();
+  return coach;
+};
+
+window.editCoachProfile = function editCoachProfile(profile) {
+  if (!profile) return null;
+  const existingProfile = coachProfiles.find((item) => item.id === profile.id || (item.name === profile.name && item.team === profile.team));
+  const nextProfile = existingProfile || {
+    id: profile.id || `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+    name: profile.name,
+    team: profile.team,
+    role: profile.role || "Head Coach",
+    record: profile.record || "",
+    accolades: profile.accolades || "",
+    legacy: profile.legacy || "0",
+    seasons: profile.seasons || "",
+  };
+
+  if (existingProfile) {
+    Object.assign(existingProfile, nextProfile);
+  } else {
+    coachProfiles.push(nextProfile);
+  }
+
+  if (nextProfile.team) {
+    if (nextProfile.role === "Head Coach") {
+      teamInfo[nextProfile.team].coach = nextProfile.name;
+    } else if (nextProfile.role === "Assistant Coach") {
+      teamInfo[nextProfile.team].assistant = nextProfile.name;
+    }
+  }
+
+  refreshViews();
+  saveState();
+  return nextProfile;
+};
 
 function renderChampionships() {
   const list = document.getElementById("championship-history-list");
@@ -684,19 +789,23 @@ document.addEventListener("click", (e) => {
     // open commissioner dashboard and show profile form for editing/creating
     showTab("commissioner-dashboard");
     // ensure roster editor visible
-    rosterEditor.classList.remove("hidden"); 
-    // find coach record in coaches list
+    rosterEditor.classList.remove("hidden");
     const coach = coaches.find((c) => c.name === name);
     const existingProfile = profile || null;
     const existingArchive = archivedProfile || null;
-    profileIdInput.value = existingProfile ? existingProfile.id : "";
-    profileName.value = name;
-    profileTeam.value = coach ? coach.team : "";
-    profileRole.value = coach ? coach.role : "Head Coach";
-    profileRecord.value = existingProfile ? existingProfile.record : "";
-    profileAccolades.value = existingProfile ? existingProfile.accolades : "";
-    profileLegacy.value = existingProfile ? existingProfile.legacy : "0";
-    profileSeasons.value = existingProfile ? existingProfile.seasons : "";
+    if (existingProfile) {
+      populateProfileForm(existingProfile);
+    } else {
+      profileIdInput.value = "";
+      profileName.value = name;
+      profileTeam.value = coach ? coach.team : "";
+      profileRole.value = coach ? coach.role : "Head Coach";
+      profileRecord.value = "";
+      profileAccolades.value = "";
+      profileLegacy.value = "0";
+      profileSeasons.value = "";
+      profileName.focus();
+    }
     archiveIdInput.value = existingArchive ? existingArchive.id : "";
     archiveName.value = name;
     archiveTeam.value = existingArchive ? existingArchive.team : "Inactive";
@@ -705,8 +814,6 @@ document.addEventListener("click", (e) => {
     archiveAccolades.value = existingArchive ? existingArchive.accolades : "";
     archiveLegacy.value = existingArchive ? existingArchive.legacy : "0";
     archiveSeasons.value = existingArchive ? existingArchive.seasons : "";
-    // focus on accolades so user can type
-    profileAccolades.focus();
     return;
   }
 
@@ -775,6 +882,7 @@ if (standingsPassForm) {
 async function initializeApp() {
   await loadState();
   mergeDomChampionships();
+  seedCoachesFromWindow();
   refreshViews();
   populateTeamSelects();
   setInterval(async () => {
