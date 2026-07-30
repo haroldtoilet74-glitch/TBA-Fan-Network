@@ -158,6 +158,15 @@ function refreshViews() {
   renderChampionships();
 }
 
+async function publishState(messageElement, successMessage, failureMessage) {
+  const published = await saveState();
+  if (messageElement) {
+    messageElement.textContent = published ? successMessage : failureMessage;
+    messageElement.style.color = published ? "#9ee7a4" : "#ffa9b0";
+  }
+  return published;
+}
+
 async function saveState() {
   const payload = getPersistedState();
   try {
@@ -293,10 +302,6 @@ const standingsAccessMessage = document.getElementById("standings-access-message
 const commissionerForm = document.getElementById("commissioner-form");
 const commissionerPassInput = document.getElementById("commissioner-passcode");
 const accessMessage = document.getElementById("access-message");
-const publishCoachesButton = document.getElementById("publish-coaches-button");
-const publishCoachesMessage = document.getElementById("publish-coaches-message");
-const publishStandingsButton = document.getElementById("publish-standings-button");
-const publishStandingsMessage = document.getElementById("publish-standings-message");
 const rosterEditor = document.getElementById("roster-editor");
 const rosterForm = document.getElementById("roster-form");
 const playerName = document.getElementById("player-name");
@@ -467,6 +472,10 @@ function renderRoster() {
   coachDeleteList.innerHTML = "";
   coachProfileList.innerHTML = "";
 
+  if (!coachProfileList || !rosterList || !coachDeleteList) {
+    return;
+  }
+
   if (coaches.length === 0) {
     rosterList.innerHTML = "<div>No coaches added yet.</div>";
   } else {
@@ -512,14 +521,21 @@ function renderRoster() {
       editBtn.type = "button";
       editBtn.textContent = "Edit profile";
       editBtn.addEventListener("click", () => {
+        if (!profileIdInput || !profileName || !profileTeam || !profileRole || !profileRecord || !profileAccolades || !profileLegacy || !profileSeasons) {
+          return;
+        }
         profileIdInput.value = profile.id;
         profileName.value = profile.name;
         profileTeam.value = profile.team;
         profileRole.value = profile.role;
-        profileRecord.value = profile.record;
-        profileAccolades.value = profile.accolades;
-        profileLegacy.value = profile.legacy;
+        profileRecord.value = profile.record || "";
+        profileAccolades.value = profile.accolades || "";
+        profileLegacy.value = profile.legacy || "0";
         profileSeasons.value = profile.seasons || "";
+        showTab("commissioner-dashboard");
+        const editor = document.getElementById("roster-editor");
+        if (editor) editor.classList.remove("hidden");
+        profileName.focus();
       });
       profileCard.appendChild(editBtn);
       coachProfileList.appendChild(profileCard);
@@ -826,36 +842,6 @@ standingsForm.addEventListener("submit", (event) => {
   saveState();
 });
 
-function setPublishMessage(element, message, isSuccess) {
-  if (!element) return;
-  element.textContent = message;
-  element.style.color = isSuccess ? "#9ee7a4" : "#ffa9b0";
-}
-
-if (publishCoachesButton) {
-  publishCoachesButton.addEventListener("click", async () => {
-    if (!isCommissionerUnlocked) {
-      setPublishMessage(publishCoachesMessage, "Unlock the commissioner dashboard first.", false);
-      return;
-    }
-
-    const published = await saveState();
-    setPublishMessage(publishCoachesMessage, published ? "Coaches published to everyone." : "Could not publish coaches right now.", published);
-  });
-}
-
-if (publishStandingsButton) {
-  publishStandingsButton.addEventListener("click", async () => {
-    if (!isCommissionerUnlocked) {
-      setPublishMessage(publishStandingsMessage, "Unlock the commissioner dashboard first.", false);
-      return;
-    }
-
-    const published = await saveState();
-    setPublishMessage(publishStandingsMessage, published ? "Standings published to everyone." : "Could not publish standings right now.", published);
-  });
-}
-
 commissionerForm.addEventListener("submit", (event) => {
   event.preventDefault();
   if (commissionerPassInput.value.trim() === commissionerPasscode) {
@@ -882,7 +868,7 @@ commissionerForm.addEventListener("submit", (event) => {
   commissionerPassInput.value = "";
 });
 
-rosterForm.addEventListener("submit", (event) => {
+rosterForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   const id = Date.now().toString();
   coaches.push({
@@ -901,10 +887,10 @@ rosterForm.addEventListener("submit", (event) => {
   renderRoster();
   renderTeamGrid();
   rosterForm.reset();
-  saveState();
+  await saveState();
 });
 
-coachArchiveForm.addEventListener("submit", (event) => {
+coachArchiveForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   const id = archiveIdInput.value || Date.now().toString();
   const entry = {
@@ -927,10 +913,10 @@ coachArchiveForm.addEventListener("submit", (event) => {
   coachArchiveForm.reset();
   archiveIdInput.value = "";
   renderArchive();
-  saveState();
+  await saveState();
 });
 
-coachProfileForm.addEventListener("submit", (event) => {
+coachProfileForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   const id = profileIdInput.value || Date.now().toString();
   const profile = {
@@ -962,10 +948,10 @@ coachProfileForm.addEventListener("submit", (event) => {
   }
   renderRoster();
   renderTeamGrid();
-  saveState();
+  await saveState();
 });
 
-teamEditForm.addEventListener("submit", (event) => {
+teamEditForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   const team = editTeamSelect.value;
   teamInfo[team].coach = editCoach.value || teamInfo[team].coach;
@@ -975,7 +961,7 @@ teamEditForm.addEventListener("submit", (event) => {
   teamInfo[team].conference = editConference.value || teamInfo[team].conference;
   renderTeamGrid();
   teamEditForm.reset();
-  saveState();
+  await saveState();
 });
 
 initializeApp();
