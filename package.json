@@ -4,7 +4,8 @@
   "description": "Static fan network site for standings, rankings, and team data.",
   "private": true,
   "scripts": {
-    "dev": "node server.js"
+    "dev": "node server.js",
+    "test": "node --test"
   },
   "devDependencies": {
     "http-server": "^14.1.1"

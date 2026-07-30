@@ -2,7 +2,7 @@ const http = require("http");
 const fs = require("fs");
 const path = require("path");
 
-const PORT = process.env.PORT || 3000;
+const DEFAULT_PORT = Number(process.env.PORT) || 3000;
 const ROOT_DIR = __dirname;
 const STATE_FILE = path.join(ROOT_DIR, "state.json");
 
@@ -90,59 +90,102 @@ function serveFile(filePath, res) {
   });
 }
 
-const server = http.createServer((req, res) => {
-  const url = new URL(req.url, `http://${req.headers.host || "localhost"}`);
-  const pathname = decodeURIComponent(url.pathname);
+function createApp() {
+  return http.createServer((req, res) => {
+    const url = new URL(req.url, `http://${req.headers.host || "localhost"}`);
+    const pathname = decodeURIComponent(url.pathname);
 
-  if (pathname === "/api/state") {
-    if (req.method === "GET") {
-      res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
-      res.end(JSON.stringify(readState()));
+    if (pathname === "/api/state") {
+      if (req.method === "GET") {
+        res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
+        res.end(JSON.stringify(readState()));
+        return;
+      }
+
+      if (req.method === "POST") {
+        let body = "";
+        req.on("data", (chunk) => {
+          body += chunk.toString();
+        });
+        req.on("end", () => {
+          try {
+            const parsed = body ? JSON.parse(body) : {};
+            const state = writeState(parsed);
+            res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
+            res.end(JSON.stringify(state));
+          } catch (error) {
+            res.writeHead(400, { "Content-Type": "application/json; charset=utf-8" });
+            res.end(JSON.stringify({ error: "Invalid JSON body" }));
+          }
+        });
+        return;
+      }
+    }
+
+    let requestedPath = pathname;
+    if (requestedPath === "/") {
+      requestedPath = "/index.html";
+    }
+
+    const safePath = path.normalize(requestedPath).replace(/^\/+/, "");
+    const absolutePath = path.join(ROOT_DIR, safePath);
+
+    if (!absolutePath.startsWith(ROOT_DIR)) {
+      res.writeHead(403, { "Content-Type": "text/plain; charset=utf-8" });
+      res.end("Forbidden");
       return;
     }
 
-    if (req.method === "POST") {
-      let body = "";
-      req.on("data", (chunk) => {
-        body += chunk.toString();
-      });
-      req.on("end", () => {
-        try {
-          const parsed = body ? JSON.parse(body) : {};
-          const state = writeState(parsed);
-          res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
-          res.end(JSON.stringify(state));
-        } catch (error) {
-          res.writeHead(400, { "Content-Type": "application/json; charset=utf-8" });
-          res.end(JSON.stringify({ error: "Invalid JSON body" }));
+    if (fs.existsSync(absolutePath) && fs.statSync(absolutePath).isDirectory()) {
+      serveFile(path.join(absolutePath, "index.html"), res);
+      return;
+    }
+
+    serveFile(absolutePath, res);
+  });
+}
+
+function startServer(port = DEFAULT_PORT, attempts = 10) {
+  const server = createApp();
+
+  const tryListen = (currentPort, remainingAttempts) => {
+    return new Promise((resolve, reject) => {
+      const onError = (error) => {
+        server.removeListener("error", onError);
+        if (error.code === "EADDRINUSE" && remainingAttempts > 0) {
+          resolve(tryListen(currentPort + 1, remainingAttempts - 1));
+          return;
         }
-      });
-      return;
-    }
-  }
+        reject(error);
+      };
 
-  let requestedPath = pathname;
-  if (requestedPath === "/") {
-    requestedPath = "/index.html";
-  }
+      const onListening = () => {
+        server.removeListener("error", onError);
+        resolve();
+      };
 
-  const safePath = path.normalize(requestedPath).replace(/^\/+/, "");
-  const absolutePath = path.join(ROOT_DIR, safePath);
+      server.once("error", onError);
+      server.once("listening", onListening);
+      server.listen(currentPort, "0.0.0.0");
+    });
+  };
 
-  if (!absolutePath.startsWith(ROOT_DIR)) {
-    res.writeHead(403, { "Content-Type": "text/plain; charset=utf-8" });
-    res.end("Forbidden");
-    return;
-  }
+  tryListen(port, attempts)
+    .then(() => {
+      const address = server.address();
+      if (address && typeof address.port === "number") {
+        console.log(`TBA Fan Network server running on http://localhost:${address.port}`);
+      }
+    })
+    .catch((error) => {
+      console.error("Unable to start server:", error);
+    });
 
-  if (fs.existsSync(absolutePath) && fs.statSync(absolutePath).isDirectory()) {
-    serveFile(path.join(absolutePath, "index.html"), res);
-    return;
-  }
+  return server;
+}
 
-  serveFile(absolutePath, res);
-});
+if (require.main === module) {
+  startServer();
+}
 
-server.listen(PORT, () => {
-  console.log(`TBA Fan Network server running on http://localhost:${PORT}`);
-});
+module.exports = { startServer };
