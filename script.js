@@ -85,12 +85,56 @@ const STORAGE_KEYS = {
   powerRankings: "tba_powerRankings",
   teamInfo: "tba_teamInfo",
   championships: "tba_championships",
+  coachArchive: "tba_coachArchive",
 };
+const API_STATE_URL = "/api/state";
 
 let lastOpenedFromTeamCard = false;
 let isCommissionerUnlocked = false;
 
-function saveState() {
+function applyState(payload) {
+  if (!payload || typeof payload !== "object") return;
+
+  if (Array.isArray(payload.coaches)) {
+    coaches.splice(0, coaches.length, ...payload.coaches);
+  }
+  if (Array.isArray(payload.coachProfiles)) {
+    coachProfiles.splice(0, coachProfiles.length, ...payload.coachProfiles);
+  }
+  if (Array.isArray(payload.standings)) {
+    standings.splice(0, standings.length, ...payload.standings);
+  }
+  if (Array.isArray(payload.powerRankings)) {
+    powerRankings.splice(0, powerRankings.length, ...payload.powerRankings);
+  }
+  if (payload.teamInfo && typeof payload.teamInfo === "object") {
+    Object.keys(payload.teamInfo).forEach((k) => {
+      if (teamInfo[k]) {
+        teamInfo[k] = payload.teamInfo[k];
+      }
+    });
+  }
+  if (Array.isArray(payload.championships)) {
+    championships.splice(0, championships.length, ...payload.championships);
+  }
+  if (Array.isArray(payload.coachArchive)) {
+    coachArchive.splice(0, coachArchive.length, ...payload.coachArchive);
+  }
+}
+
+function getPersistedState() {
+  return {
+    coaches: coaches.slice(),
+    coachProfiles: coachProfiles.slice(),
+    standings: standings.slice(),
+    powerRankings: powerRankings.slice(),
+    teamInfo: Object.fromEntries(Object.entries(teamInfo)),
+    championships: championships.slice(),
+    coachArchive: coachArchive.slice(),
+  };
+}
+
+function saveToLocalFallback() {
   try {
     localStorage.setItem(STORAGE_KEYS.coaches, JSON.stringify(coaches));
     localStorage.setItem(STORAGE_KEYS.coachProfiles, JSON.stringify(coachProfiles));
@@ -98,62 +142,100 @@ function saveState() {
     localStorage.setItem(STORAGE_KEYS.powerRankings, JSON.stringify(powerRankings));
     localStorage.setItem(STORAGE_KEYS.teamInfo, JSON.stringify(teamInfo));
     localStorage.setItem(STORAGE_KEYS.championships, JSON.stringify(championships));
+    localStorage.setItem(STORAGE_KEYS.coachArchive, JSON.stringify(coachArchive));
   } catch (e) {
     console.error("Failed to save state:", e);
   }
 }
 
-function loadState() {
+async function saveState() {
+  const payload = getPersistedState();
   try {
-    const sCoaches = localStorage.getItem(STORAGE_KEYS.coaches);
-    const sProfiles = localStorage.getItem(STORAGE_KEYS.coachProfiles);
-    const sStandings = localStorage.getItem(STORAGE_KEYS.standings);
-    const sPower = localStorage.getItem(STORAGE_KEYS.powerRankings);
-    const sTeamInfo = localStorage.getItem(STORAGE_KEYS.teamInfo);
-    if (sCoaches) {
-      const parsed = JSON.parse(sCoaches);
-      if (Array.isArray(parsed)) {
-        coaches.splice(0, coaches.length, ...parsed);
-      }
+    const response = await fetch(API_STATE_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Server returned ${response.status}`);
     }
-    if (sProfiles) {
-      const parsed = JSON.parse(sProfiles);
-      if (Array.isArray(parsed)) {
-        coachProfiles.splice(0, coachProfiles.length, ...parsed);
-      }
-    }
-    if (sStandings) {
-      const parsed = JSON.parse(sStandings);
-      if (Array.isArray(parsed)) {
-        standings.splice(0, standings.length, ...parsed);
-      }
-    }
-    if (sPower) {
-      const parsed = JSON.parse(sPower);
-      if (Array.isArray(parsed)) {
-        powerRankings.splice(0, powerRankings.length, ...parsed);
-      }
-    }
-    if (sTeamInfo) {
-      const parsed = JSON.parse(sTeamInfo);
-      if (parsed && typeof parsed === "object") {
-        Object.keys(parsed).forEach((k) => {
-          if (teamInfo[k]) {
-            teamInfo[k] = parsed[k];
-          }
-        });
-      }
-    }
-    // load championships if present
-    const sChamps = localStorage.getItem(STORAGE_KEYS.championships);
-    if (sChamps) {
-      const parsed = JSON.parse(sChamps);
-      if (Array.isArray(parsed)) {
-        championships.splice(0, championships.length, ...parsed);
-      }
-    }
+
+    const serverState = await response.json();
+    applyState(serverState);
   } catch (e) {
-    console.error("Failed to load state:", e);
+    console.error("Failed to sync state to server:", e);
+    saveToLocalFallback();
+  }
+}
+
+async function loadState() {
+  try {
+    const response = await fetch(API_STATE_URL);
+    if (!response.ok) {
+      throw new Error(`Server returned ${response.status}`);
+    }
+    const payload = await response.json();
+    applyState(payload);
+  } catch (e) {
+    console.error("Failed to load shared state:", e);
+    try {
+      const sCoaches = localStorage.getItem(STORAGE_KEYS.coaches);
+      const sProfiles = localStorage.getItem(STORAGE_KEYS.coachProfiles);
+      const sStandings = localStorage.getItem(STORAGE_KEYS.standings);
+      const sPower = localStorage.getItem(STORAGE_KEYS.powerRankings);
+      const sTeamInfo = localStorage.getItem(STORAGE_KEYS.teamInfo);
+      if (sCoaches) {
+        const parsed = JSON.parse(sCoaches);
+        if (Array.isArray(parsed)) {
+          coaches.splice(0, coaches.length, ...parsed);
+        }
+      }
+      if (sProfiles) {
+        const parsed = JSON.parse(sProfiles);
+        if (Array.isArray(parsed)) {
+          coachProfiles.splice(0, coachProfiles.length, ...parsed);
+        }
+      }
+      if (sStandings) {
+        const parsed = JSON.parse(sStandings);
+        if (Array.isArray(parsed)) {
+          standings.splice(0, standings.length, ...parsed);
+        }
+      }
+      if (sPower) {
+        const parsed = JSON.parse(sPower);
+        if (Array.isArray(parsed)) {
+          powerRankings.splice(0, powerRankings.length, ...parsed);
+        }
+      }
+      if (sTeamInfo) {
+        const parsed = JSON.parse(sTeamInfo);
+        if (parsed && typeof parsed === "object") {
+          Object.keys(parsed).forEach((k) => {
+            if (teamInfo[k]) {
+              teamInfo[k] = parsed[k];
+            }
+          });
+        }
+      }
+      const sChamps = localStorage.getItem(STORAGE_KEYS.championships);
+      if (sChamps) {
+        const parsed = JSON.parse(sChamps);
+        if (Array.isArray(parsed)) {
+          championships.splice(0, championships.length, ...parsed);
+        }
+      }
+      const sArchive = localStorage.getItem(STORAGE_KEYS.coachArchive);
+      if (sArchive) {
+        const parsed = JSON.parse(sArchive);
+        if (Array.isArray(parsed)) {
+          coachArchive.splice(0, coachArchive.length, ...parsed);
+        }
+      }
+    } catch (loadError) {
+      console.error("Failed to load local fallback state:", loadError);
+    }
   }
 }
 
@@ -161,6 +243,7 @@ const standings = [];
 const powerRankings = [];
 const coaches = [];
 const coachProfiles = [];
+const coachArchive = [];
 // championship history managed programmatically
 const championships = [
   {
@@ -217,6 +300,16 @@ const editRecord = document.getElementById("edit-record");
 const editDivision = document.getElementById("edit-division");
 const editConference = document.getElementById("edit-conference");
 const teamEditForm = document.getElementById("team-edit-form");
+const coachArchiveForm = document.getElementById("coach-archive-form");
+const archiveIdInput = document.getElementById("archive-id");
+const archiveName = document.getElementById("archive-name");
+const archiveRole = document.getElementById("archive-role");
+const archiveTeam = document.getElementById("archive-team");
+const archiveRecord = document.getElementById("archive-record");
+const archiveAccolades = document.getElementById("archive-accolades");
+const archiveLegacy = document.getElementById("archive-legacy");
+const archiveSeasons = document.getElementById("archive-seasons");
+const archiveList = document.getElementById("coaches-archive-list");
 
 function renderTeamGrid() {
   teamGrid.innerHTML = "";
@@ -257,13 +350,23 @@ function renderTeamGrid() {
 }
 
 function populateTeamSelects() {
-  [powerTeamSelect, standingsTeamSelect, teamName, profileTeam, editTeamSelect].forEach((select) => {
+  [powerTeamSelect, standingsTeamSelect, teamName, profileTeam, editTeamSelect, archiveTeam].forEach((select) => {
+    if (!select) return;
+    const existing = Array.from(select.options).map((option) => option.value);
     teams.forEach((team) => {
-      const option = document.createElement("option");
-      option.value = team;
-      option.textContent = team;
-      select.appendChild(option);
+      if (!existing.includes(team)) {
+        const option = document.createElement("option");
+        option.value = team;
+        option.textContent = team;
+        select.appendChild(option);
+      }
     });
+    if (!existing.includes("Inactive") && select === archiveTeam) {
+      const inactiveOption = document.createElement("option");
+      inactiveOption.value = "Inactive";
+      inactiveOption.textContent = "Inactive";
+      select.appendChild(inactiveOption);
+    }
   });
 }
 
@@ -315,6 +418,27 @@ function renderStandings() {
     table.appendChild(entryCard);
   });
   standingsContent.appendChild(table);
+}
+
+function renderArchive() {
+  if (!archiveList) return;
+  archiveList.innerHTML = "";
+  if (coachArchive.length === 0) {
+    archiveList.innerHTML = "<div>No archived coaches yet.</div>";
+    return;
+  }
+
+  coachArchive.forEach((entry) => {
+    const card = document.createElement("div");
+    card.innerHTML = `
+      <strong><span class="coach-link" data-coach="${entry.name}">${entry.name}</span></strong>
+      <p>${entry.role} — ${entry.team}</p>
+      <p>Record: ${entry.record || "N/A"}</p>
+      <p>Seasons: ${entry.seasons || "N/A"}</p>
+      <p>Legacy: ${entry.legacy} star(s)</p>
+    `;
+    archiveList.appendChild(card);
+  });
 }
 
 function renderRoster() {
@@ -497,23 +621,26 @@ document.addEventListener("click", (e) => {
       return;
     }
     const profile = coachProfiles.find((p) => p.name === name);
+    const archivedProfile = coachArchive.find((p) => p.name === name);
     const inTeamCard = Boolean(t.closest && t.closest('.team-card'));
-    if (inTeamCard) {
+    const inArchiveList = Boolean(t.closest && t.closest('.archive-list'));
+    if (inTeamCard || inArchiveList) {
       // show read-only profile modal when clicked from team hub
-      if (!profile) {
+      const selectedProfile = profile || archivedProfile;
+      if (!selectedProfile) {
         showModal(name, "<p>No profile found. Add profile in Commissioner Dashboard.</p>");
         return;
       }
-      const legacyStars = renderLegacyStars(profile.legacy);
-    const profHtml = `
-        <p><strong>Team:</strong> ${profile.team}</p>
-        <p><strong>Role:</strong> ${profile.role}</p>
-        <p><strong>Seasons:</strong> ${profile.seasons || "N/A"}</p>
-        <p><strong>All-Time Record:</strong> ${profile.record || "N/A"}</p>
+      const legacyStars = renderLegacyStars(selectedProfile.legacy);
+      const profHtml = `
+        <p><strong>Team:</strong> ${selectedProfile.team}</p>
+        <p><strong>Role:</strong> ${selectedProfile.role}</p>
+        <p><strong>Seasons:</strong> ${selectedProfile.seasons || "N/A"}</p>
+        <p><strong>All-Time Record:</strong> ${selectedProfile.record || "N/A"}</p>
         <p><strong>Legacy:</strong> <span class="legacy-stars">${legacyStars}</span></p>
-        <p><strong>Accolades:</strong><br/>${(profile.accolades || "None").replace(/\n/g, '<br/>')}</p>
+        <p><strong>Accolades:</strong><br/>${(selectedProfile.accolades || "None").replace(/\n/g, '<br/>')}</p>
       `;
-      showModal(profile.name, profHtml);
+      showModal(selectedProfile.name, profHtml);
       return;
     }
     // otherwise (e.g., roster) open commissioner dashboard for editing
@@ -524,6 +651,7 @@ document.addEventListener("click", (e) => {
     // find coach record in coaches list
     const coach = coaches.find((c) => c.name === name);
     const existingProfile = profile || null;
+    const existingArchive = archivedProfile || null;
     profileIdInput.value = existingProfile ? existingProfile.id : "";
     profileName.value = name;
     profileTeam.value = coach ? coach.team : "";
@@ -532,6 +660,14 @@ document.addEventListener("click", (e) => {
     profileAccolades.value = existingProfile ? existingProfile.accolades : "";
     profileLegacy.value = existingProfile ? existingProfile.legacy : "0";
     profileSeasons.value = existingProfile ? existingProfile.seasons : "";
+    archiveIdInput.value = existingArchive ? existingArchive.id : "";
+    archiveName.value = name;
+    archiveTeam.value = existingArchive ? existingArchive.team : "Inactive";
+    archiveRole.value = existingArchive ? existingArchive.role : (coach ? coach.role : "Head Coach");
+    archiveRecord.value = existingArchive ? existingArchive.record : "";
+    archiveAccolades.value = existingArchive ? existingArchive.accolades : "";
+    archiveLegacy.value = existingArchive ? existingArchive.legacy : "0";
+    archiveSeasons.value = existingArchive ? existingArchive.seasons : "";
     // focus on accolades so user can type
     profileAccolades.focus();
     return;
@@ -599,8 +735,33 @@ if (standingsPassForm) {
   });
 }
 
-// load persisted data before initial renders
-loadState();
+async function initializeApp() {
+  await loadState();
+  mergeDomChampionships();
+  renderTeamGrid();
+  populateTeamSelects();
+  renderPowerRankings();
+  renderStandings();
+  renderRoster();
+  renderArchive();
+  renderChampionships();
+  setInterval(async () => {
+    try {
+      const response = await fetch(API_STATE_URL);
+      if (!response.ok) return;
+      const payload = await response.json();
+      applyState(payload);
+      renderTeamGrid();
+      renderPowerRankings();
+      renderStandings();
+      renderRoster();
+      renderArchive();
+      renderChampionships();
+    } catch (error) {
+      console.error("Failed to refresh shared state:", error);
+    }
+  }, 3000);
+}
 
 // Merge any static <li> items in the Championship History DOM into the championships array
 function mergeDomChampionships() {
@@ -702,6 +863,32 @@ rosterForm.addEventListener("submit", (event) => {
   saveState();
 });
 
+coachArchiveForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  const id = archiveIdInput.value || Date.now().toString();
+  const entry = {
+    id,
+    name: archiveName.value.trim(),
+    team: archiveTeam.value,
+    role: archiveRole.value,
+    record: archiveRecord.value.trim(),
+    accolades: archiveAccolades.value.trim(),
+    legacy: archiveLegacy.value,
+    seasons: archiveSeasons.value,
+  };
+
+  const index = coachArchive.findIndex((item) => item.id === id);
+  if (index > -1) {
+    coachArchive[index] = entry;
+  } else {
+    coachArchive.push(entry);
+  }
+  coachArchiveForm.reset();
+  archiveIdInput.value = "";
+  renderArchive();
+  saveState();
+});
+
 coachProfileForm.addEventListener("submit", (event) => {
   event.preventDefault();
   const id = profileIdInput.value || Date.now().toString();
@@ -750,9 +937,4 @@ teamEditForm.addEventListener("submit", (event) => {
   saveState();
 });
 
-renderTeamGrid();
-populateTeamSelects();
-renderPowerRankings();
-renderStandings();
-renderRoster();
-renderChampionships();
+initializeApp();

@@ -147,6 +147,7 @@
             <div class="mini-tabs" role="tablist" aria-label="League History">
               <button class="mini-tab active" data-target="award-history">Award History</button>
               <button class="mini-tab" data-target="championship-history">Championship History</button>
+              <button class="mini-tab" data-target="coaches-archive">Coaches Archive</button>
             </div>
 
             <div id="award-history" class="mini-panel active">
@@ -162,6 +163,10 @@
               <ul class="history-list" id="championship-history-list">
                 <li class="champ-link" data-title="S1 Finals" data-desc="San Antonio Spurs defeat Milwaukee Bucks, 119-114">S1 Finals: San Antonio Spurs defeat Milwaukee Bucks, 119-114</li>
               </ul>
+            </div>
+
+            <div id="coaches-archive" class="mini-panel">
+              <div id="coaches-archive-list" class="archive-list"></div>
             </div>
           </div>
         </section>
@@ -257,6 +262,54 @@
                   </select>
                 </label>
                 <button type="submit">Save Coach Profile</button>
+              </form>
+
+              <h3>Coach Archive Manager</h3>
+              <form id="coach-archive-form" class="roster-form">
+                <input type="hidden" id="archive-id" />
+                <label>
+                  Coach Name
+                  <input type="text" id="archive-name" placeholder="Archived coach name" required />
+                </label>
+                <label>
+                  Role
+                  <select id="archive-role" required>
+                    <option value="">Select role</option>
+                    <option value="Head Coach">Head Coach</option>
+                    <option value="Assistant Coach">Assistant Coach</option>
+                  </select>
+                </label>
+                <label>
+                  Team
+                  <select id="archive-team" required>
+                    <option value="">Select team</option>
+                    <option value="Inactive">Inactive</option>
+                  </select>
+                </label>
+                <label>
+                  All-Time Record
+                  <input type="text" id="archive-record" placeholder="e.g. 640-500" />
+                </label>
+                <label>
+                  Seasons in League
+                  <input type="number" id="archive-seasons" min="0" placeholder="e.g. 12" />
+                </label>
+                <label>
+                  Accolades
+                  <textarea id="archive-accolades" rows="4" placeholder="One accolade per line"></textarea>
+                </label>
+                <label>
+                  Legacy Level
+                  <select id="archive-legacy" required>
+                    <option value="0">Select legacy level</option>
+                    <option value="1">1 star</option>
+                    <option value="2">2 stars</option>
+                    <option value="3">3 stars</option>
+                    <option value="4">4 stars</option>
+                    <option value="5">5 stars</option>
+                  </select>
+                </label>
+                <button type="submit">Save Archived Coach</button>
               </form>
 
               <h3>Edit Team Info</h3>

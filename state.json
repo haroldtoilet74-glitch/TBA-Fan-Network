@@ -1,0 +1,22 @@
+{
+  "coaches": [],
+  "coachProfiles": [],
+  "standings": [],
+  "powerRankings": [],
+  "teamInfo": {
+    "Celtics": {
+      "coach": "Shared Coach",
+      "assistant": "TBD",
+      "record": "20-4",
+      "division": "Atlantic",
+      "conference": "Eastern"
+    }
+  },
+  "championships": [
+    {
+      "id": "s1-finals",
+      "title": "S1 Finals",
+      "desc": "San Antonio Spurs defeat Milwaukee Bucks, 119-114"
+    }
+  ]
+}
